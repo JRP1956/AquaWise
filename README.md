@@ -8,7 +8,7 @@ K J Somaiya College of Engineering, Somaiya Vidyavihar University.
 
 | | |
 | --- | --- |
-| **Team** | *(member 1 — name, roll no.)*, *(member 2 — name, roll no.)* |
+| **Team** | <REPLACE ME> |
 | **Guide** | Prof. Sonia Joshi |
 | **Stack** | HTML5 · CSS3 · Bootstrap 5 · JavaScript · React · Node.js/Express · MongoDB |
 
