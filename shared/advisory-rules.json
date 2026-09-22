@@ -1,0 +1,334 @@
+{
+  "version": "1.0",
+  "severityOrder": ["critical", "high", "medium", "low"],
+  "contactDirectory": {
+    "ERSS": { "key": "ERSS", "name": "Emergency (police, fire, ambulance)", "phone": "112", "when": "Any threat to life, injury or electrical hazard" },
+    "MUNI": { "key": "MUNI", "name": "Municipal water department", "phone": "1916", "when": "Street mains, supply failure, contamination at source (Mumbai BMC number shown by default)" },
+    "SOC_ADMIN": { "key": "SOC_ADMIN", "name": "Society admin / secretary", "phone": "See your society dashboard", "when": "Anything affecting the whole building" },
+    "SOC_MAINT": { "key": "SOC_MAINT", "name": "Society maintenance in-charge", "phone": "See your society dashboard", "when": "Common pipes, tanks and pumps" },
+    "PLUMBER": { "key": "PLUMBER", "name": "Licensed plumber", "phone": "Your society's empanelled plumber", "when": "Repairs inside your own flat" },
+    "DOCTOR": { "key": "DOCTOR", "name": "Nearest doctor or primary health centre", "phone": "Local", "when": "Anyone unwell after drinking the water" }
+  },
+  "problems": [
+    {
+      "id": "leakage",
+      "label": "Leakage",
+      "icon": "bi-droplet-half",
+      "summary": "A tap, pipe, cistern or tank is losing water.",
+      "complaintCategory": "leakage",
+      "questions": [
+        {
+          "id": "leakKind",
+          "text": "What is leaking?",
+          "options": [
+            { "value": "dripping_tap", "label": "A dripping tap or a running flush inside my flat" },
+            { "value": "pipe_joint", "label": "A pipe joint, wall seepage or an overflowing tank" },
+            { "value": "burst_pipe", "label": "A burst pipe — water is flooding the floor" }
+          ]
+        },
+        {
+          "id": "hazard",
+          "text": "Is there standing water, or water near switches, meters or the lift?",
+          "options": [
+            { "value": "no", "label": "No" },
+            { "value": "yes", "label": "Yes" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "no_supply",
+      "label": "No supply",
+      "icon": "bi-slash-circle",
+      "summary": "No water is reaching your tap.",
+      "complaintCategory": "no_supply",
+      "questions": [
+        {
+          "id": "duration",
+          "text": "How long has the supply been off?",
+          "options": [
+            { "value": "under_24h", "label": "Less than 24 hours, or it was announced" },
+            { "value": "over_24h", "label": "More than 24 hours, unannounced" },
+            { "value": "over_72h", "label": "More than 72 hours" }
+          ]
+        },
+        {
+          "id": "vulnerable",
+          "text": "Is there an infant, an elderly or ill person at home, or less than 7.5 L left per person?",
+          "options": [
+            { "value": "no", "label": "No" },
+            { "value": "yes", "label": "Yes" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "unsafe_drinking_water",
+      "label": "Unsafe drinking water",
+      "icon": "bi-exclamation-triangle",
+      "summary": "The water looks, smells or tastes wrong.",
+      "complaintCategory": "unsafe_drinking_water",
+      "questions": [
+        {
+          "id": "symptoms",
+          "text": "Has anyone at home had diarrhoea, vomiting or fever after drinking this water?",
+          "options": [
+            { "value": "no", "label": "No one is ill" },
+            { "value": "yes", "label": "Yes, someone is ill" }
+          ]
+        },
+        {
+          "id": "sign",
+          "text": "What made you suspect it?",
+          "options": [
+            { "value": "taste_smell_colour", "label": "Odd taste, smell or colour" },
+            { "value": "tank_uncleaned", "label": "The tank has not been cleaned in over 6 months" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "low_pressure",
+      "label": "Low pressure",
+      "icon": "bi-speedometer",
+      "summary": "Water flows, but far too slowly.",
+      "complaintCategory": "low_pressure",
+      "questions": [
+        {
+          "id": "scope",
+          "text": "Where is the pressure low?",
+          "options": [
+            { "value": "one_fixture", "label": "Only one tap or shower" },
+            { "value": "whole_flat", "label": "My whole flat — neighbours are fine" },
+            { "value": "whole_building", "label": "The whole building or area" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "contamination",
+      "label": "Contamination",
+      "icon": "bi-bug",
+      "summary": "Something has got into the water.",
+      "complaintCategory": "contamination",
+      "questions": [
+        {
+          "id": "appearance",
+          "text": "What do you see or smell?",
+          "options": [
+            { "value": "discoloured_sediment", "label": "Brown or yellow water, or sediment — no bad smell" },
+            { "value": "sewage_smell", "label": "Sewage smell, black water, worms or visible matter" },
+            { "value": "chemical_smell", "label": "Chemical, fuel or oily smell, or an oily film" }
+          ]
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "LK-3",
+      "problem": "leakage",
+      "severity": "critical",
+      "title": "Burst pipe or water near electrics",
+      "when": [{ "leakKind": ["burst_pipe"] }, { "hazard": ["yes"] }],
+      "steps": [
+        "Move everyone away from the water.",
+        "Switch off the flat's main breaker — only if you can reach it without standing in water.",
+        "Close the main inlet valve. If it is a common line, ask security to close the building valve.",
+        "Call the society admin. Call 112 for any electrical hazard or injury.",
+        "If the burst is on the road main, report it to the municipal water department.",
+        "File a complaint so the repair is tracked."
+      ],
+      "contacts": ["ERSS", "SOC_ADMIN", "MUNI"]
+    },
+    {
+      "id": "LK-2",
+      "problem": "leakage",
+      "severity": "medium",
+      "title": "Pipe-joint leak or wall seepage",
+      "when": [{ "leakKind": ["pipe_joint"], "hazard": ["no"] }],
+      "steps": [
+        "Close your flat's main inlet valve.",
+        "Unplug appliances and keep sockets near the wet wall switched off.",
+        "Photograph the spot and mark it.",
+        "File a complaint under 'leakage'.",
+        "Reopen the valve only for short periods until it is repaired."
+      ],
+      "contacts": ["SOC_MAINT", "PLUMBER"]
+    },
+    {
+      "id": "LK-1",
+      "problem": "leakage",
+      "severity": "low",
+      "title": "Dripping tap or running flush",
+      "when": [{ "leakKind": ["dripping_tap"], "hazard": ["no"] }],
+      "steps": [
+        "Put a container under the drip so the water is at least used.",
+        "Close the small valve under that tap or cistern, if there is one.",
+        "Replace the washer, cartridge or flush flapper, or book a plumber.",
+        "Enter it as a dripping tap in the calculator — each one wastes about 31 L a day."
+      ],
+      "contacts": ["PLUMBER", "SOC_MAINT"]
+    },
+    {
+      "id": "NS-3",
+      "problem": "no_supply",
+      "severity": "critical",
+      "title": "Outage over 72 hours, or someone vulnerable at home",
+      "when": [{ "duration": ["over_72h"] }, { "vulnerable": ["yes"] }],
+      "steps": [
+        "Ask the society admin to arrange a municipal or authorised tanker.",
+        "Treat tanker water before drinking it — boil for 1 minute, or use 2 drops of unscented 5–9% bleach per litre and wait 30 minutes.",
+        "Use water only for drinking and cooking until supply returns.",
+        "The society admin escalates in writing to the ward office, quoting the complaint number.",
+        "Call 112 if anyone shows signs of dehydration."
+      ],
+      "contacts": ["SOC_ADMIN", "MUNI", "ERSS"]
+    },
+    {
+      "id": "NS-2",
+      "problem": "no_supply",
+      "severity": "medium",
+      "title": "Unannounced outage over 24 hours",
+      "when": [{ "duration": ["over_24h"] }],
+      "steps": [
+        "Ask the society admin to check tank levels and the pump.",
+        "The society admin registers a complaint with the municipal department and shares the complaint number.",
+        "Ration to at least 20 L per person per day for drinking and basic hygiene.",
+        "File an AquaWise complaint under 'no supply'."
+      ],
+      "contacts": ["SOC_ADMIN", "MUNI"]
+    },
+    {
+      "id": "NS-1",
+      "problem": "no_supply",
+      "severity": "low",
+      "title": "Short or announced outage",
+      "when": [{ "duration": ["under_24h"] }],
+      "steps": [
+        "Check the society notice board and municipal announcements for a scheduled cut.",
+        "Ask neighbours — is it only your flat, or the whole building?",
+        "If only your flat: check that your inlet valve is open.",
+        "Save stored water for drinking and cooking first — at least 7.5 L per person per day."
+      ],
+      "contacts": ["SOC_ADMIN"]
+    },
+    {
+      "id": "UD-2",
+      "problem": "unsafe_drinking_water",
+      "severity": "critical",
+      "title": "Someone is ill after drinking the water",
+      "when": [{ "symptoms": ["yes"] }],
+      "steps": [
+        "See a doctor. Call 112 if symptoms are severe, or the patient is an infant or elderly.",
+        "Stop using that source entirely.",
+        "Treat all drinking water: boil at a rolling boil for 1 minute, or add 2 drops of unscented 5–9% bleach per litre and wait 30 minutes.",
+        "Tell the society admin so other residents are warned.",
+        "The society admin reports it to the municipal department."
+      ],
+      "contacts": ["DOCTOR", "ERSS", "SOC_ADMIN", "MUNI"]
+    },
+    {
+      "id": "UD-1",
+      "problem": "unsafe_drinking_water",
+      "severity": "high",
+      "title": "Water looks or smells wrong, nobody ill yet",
+      "when": [{ "symptoms": ["no"] }],
+      "steps": [
+        "Stop drinking untreated tap water — use sealed bottled or treated water.",
+        "If it is cloudy, filter it through a clean cloth, or let it settle and draw off the clear water.",
+        "Boil at a rolling boil for 1 minute, or add 2 drops of unscented 5–9% bleach per litre and wait 30 minutes. Double the bleach if it is cloudy.",
+        "Store it in clean, covered containers.",
+        "Ask the society admin to clean the tanks and test the water against BIS IS 10500."
+      ],
+      "contacts": ["SOC_ADMIN", "MUNI"]
+    },
+    {
+      "id": "LP-3",
+      "problem": "low_pressure",
+      "severity": "medium",
+      "title": "Whole building or area is weak",
+      "when": [{ "scope": ["whole_building"] }],
+      "steps": [
+        "Ask the society admin to check the overhead tank level and the pump.",
+        "Check the municipal supply timings for your ward.",
+        "The society admin registers a complaint with the municipal department.",
+        "Store water during supply hours."
+      ],
+      "contacts": ["SOC_ADMIN", "MUNI"]
+    },
+    {
+      "id": "LP-2",
+      "problem": "low_pressure",
+      "severity": "medium",
+      "title": "Whole flat is weak, neighbours are fine",
+      "when": [{ "scope": ["whole_flat"] }],
+      "steps": [
+        "Check that your flat's main inlet valve is fully open.",
+        "Leak test: close every tap and watch the meter. If it still moves, follow the leakage advice.",
+        "Ask a plumber to check the inlet filter and pipes for blockage.",
+        "File a complaint under 'low pressure'."
+      ],
+      "contacts": ["SOC_MAINT", "PLUMBER"]
+    },
+    {
+      "id": "LP-1",
+      "problem": "low_pressure",
+      "severity": "low",
+      "title": "Only one tap or shower is weak",
+      "when": [{ "scope": ["one_fixture"] }],
+      "steps": [
+        "Unscrew and clean the aerator or shower-head mesh.",
+        "Check that the valve under that fixture is fully open.",
+        "If it is still weak, book a plumber."
+      ],
+      "contacts": ["PLUMBER"]
+    },
+    {
+      "id": "CT-3",
+      "problem": "contamination",
+      "severity": "critical",
+      "title": "Chemical, fuel or oily contamination",
+      "when": [{ "appearance": ["chemical_smell"] }],
+      "steps": [
+        "Do not drink or cook with it — boiling will not remove chemicals.",
+        "Use sealed bottled water.",
+        "Photograph it and collect a sample in a clean bottle.",
+        "The society admin reports it to the municipal department immediately and warns residents.",
+        "If anyone is ill, call 112."
+      ],
+      "contacts": ["MUNI", "SOC_ADMIN", "ERSS"]
+    },
+    {
+      "id": "CT-2",
+      "problem": "contamination",
+      "severity": "critical",
+      "title": "Sewage mixing or visible matter",
+      "when": [{ "appearance": ["sewage_smell"] }],
+      "steps": [
+        "Do not drink, cook or brush your teeth with it — use sealed bottled water.",
+        "Photograph it and collect a sample.",
+        "The society admin isolates the affected tank and reports to the municipal department immediately.",
+        "The society admin warns all residents through the dashboard.",
+        "Reuse only after tank cleaning, disinfection and a passing IS 10500 test.",
+        "If anyone is ill, follow the 'someone is ill' advice under unsafe drinking water."
+      ],
+      "contacts": ["MUNI", "SOC_ADMIN", "ERSS"]
+    },
+    {
+      "id": "CT-1",
+      "problem": "contamination",
+      "severity": "high",
+      "title": "Discoloured water or sediment",
+      "when": [{ "appearance": ["discoloured_sediment"] }],
+      "steps": [
+        "Do not drink it.",
+        "Run the cold tap until it clears, and collect a sample in a clean bottle.",
+        "Treat drinking water: filter if cloudy, boil for 1 minute or disinfect, then store covered.",
+        "File a complaint under 'contamination'.",
+        "The society cleans the tank and tests the water against IS 10500."
+      ],
+      "contacts": ["SOC_ADMIN", "SOC_MAINT", "MUNI"]
+    }
+  ]
+}

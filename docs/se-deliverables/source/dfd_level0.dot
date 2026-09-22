@@ -1,0 +1,24 @@
+// AquaWise — DFD Level 0 (Context diagram). Render: dot -Tpng -Gdpi=200 dfd_level0.dot -o dfd_level0.png
+digraph DFD0 {
+  graph [rankdir=LR, fontname="Helvetica", nodesep=0.7, ranksep=2.2, pad=0.4, label="AquaWise — DFD Level 0 (Context Diagram)", labelloc=t, fontsize=20];
+  node  [fontname="Helvetica", fontsize=13];
+  edge  [fontname="Helvetica", fontsize=11, color="#333333", arrowsize=0.8];
+
+  Guest    [shape=box, style="filled,bold", fillcolor="#FFF2CC", label="Guest", width=1.6, height=0.8];
+  Resident [shape=box, style="filled,bold", fillcolor="#FFF2CC", label="Registered\nResident", width=1.6, height=0.8];
+  Admin    [shape=box, style="filled,bold", fillcolor="#FFF2CC", label="Society\nAdmin", width=1.6, height=0.8];
+
+  P0 [shape=circle, style=filled, fillcolor="#DCEBF7", color="#1F4E79", penwidth=2, width=2.6, fixedsize=true,
+      label=<<b>0</b><br/><br/><b>AquaWise</b><br/>Water Conservation<br/>&amp; Awareness Portal>];
+
+  {rank=same; Guest; Resident;}
+
+  Guest -> P0 [label="household details\lproblem type + answers\lsign-up details\l"];
+  P0 -> Guest [label="usage report + norm band\ladvisory steps + contacts\l"];
+
+  Resident -> P0 [label="login credentials\lcalculator inputs\ljoin code / society details\lcomplaint details, reopen request\l"];
+  P0 -> Resident [label="session status\lusage report + history\lcomplaint status\lsociety dashboard\l"];
+
+  P0 -> Admin [label="society dashboard\lcomplaint list\ljoin code\l"];
+  Admin -> P0 [label="status updates + notes\llocal contacts\lcode regeneration request\l"];
+}

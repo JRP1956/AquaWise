@@ -1,0 +1,13 @@
+{
+  "name": "aquawise",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AquaWise — Smart Water Conservation and Awareness Portal (SDG 6). WPL mini project.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test shared/*.test.js",
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run dev",
+    "install:all": "npm install --prefix client && npm install --prefix server"
+  }
+}

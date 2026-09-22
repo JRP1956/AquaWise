@@ -1,0 +1,102 @@
+@startuml AquaWise_UseCase
+' AquaWise — UML Use-Case Diagram (edit and re-render with PlantUML)
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 12
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #EAF4FB
+  BorderColor #1F6F9F
+  ArrowColor #333333
+}
+skinparam rectangle {
+  BorderColor #1F6F9F
+  BackgroundColor #FFFFFF
+}
+
+actor "Guest" as Guest
+actor "Registered\nResident" as Resident
+actor "Society\nAdmin" as Admin
+actor "System" as Sys <<secondary>>
+
+Guest <|-- Resident
+Resident <|-- Admin
+
+rectangle "AquaWise Portal" as Portal {
+  rectangle "Account" as Acc {
+    usecase "UC09 Sign Up" as UC09
+    usecase "UC10 Log In" as UC10
+    usecase "UC11 Log Out" as UC11
+  }
+  rectangle "Water Usage Calculator" as Calc {
+    usecase "UC01 Calculate\nWater Usage" as UC01
+    usecase "UC02 Classify Usage\nAgainst Norms" as UC02
+    usecase "UC03 Save\nCalculation" as UC03
+    usecase "UC04 View Calculation\nHistory" as UC04
+  }
+  rectangle "Crisis Advisory Engine" as Adv {
+    usecase "UC05 Get Crisis\nAdvice" as UC05
+    usecase "UC06 Evaluate\nAdvisory Rules" as UC06
+    usecase "UC07 Show Emergency\nContacts (112)" as UC07
+    usecase "UC08 Report Issue\nto Society" as UC08
+  }
+  rectangle "Society Portal" as Soc {
+    usecase "UC12 Join Society\nby Code" as UC12
+    usecase "UC13 File\nComplaint" as UC13
+    usecase "UC14 Route\nComplaint" as UC14
+    usecase "UC15 Track My\nComplaints" as UC15
+    usecase "UC16 Reopen\nComplaint" as UC16
+    usecase "UC17 View Society\nDashboard" as UC17
+    usecase "UC18 Create\nSociety" as UC18
+    usecase "UC19 Generate\nJoin Code" as UC19
+    usecase "UC20 Regenerate\nJoin Code" as UC20
+    usecase "UC21 Update\nComplaint Status" as UC21
+    usecase "UC22 Record Status\nHistory" as UC22
+    usecase "UC23 Manage Local\nContacts" as UC23
+  }
+}
+
+' --- Guest (inherited by Resident and Admin) ---
+Guest --> UC09
+Guest --> UC10
+Guest --> UC01
+Guest --> UC05
+
+' --- Registered Resident ---
+Resident --> UC11
+Resident --> UC04
+Resident --> UC12
+Resident --> UC18
+Resident --> UC13
+Resident --> UC15
+Resident --> UC17
+
+' --- Society Admin ---
+Admin --> UC20
+Admin --> UC21
+Admin --> UC23
+
+' --- include (base always performs the included behaviour) ---
+UC01 ..> UC02 : <<include>>
+UC05 ..> UC06 : <<include>>
+UC08 ..> UC13 : <<include>>
+UC13 ..> UC14 : <<include>>
+UC18 ..> UC19 : <<include>>
+UC20 ..> UC19 : <<include>>
+UC21 ..> UC22 : <<include>>
+
+' --- extend (optional behaviour; arrow points to the base use case) ---
+UC03 .> UC01 : <<extend>>\n[logged in]
+UC07 .> UC05 : <<extend>>\n[severity = critical]
+UC08 .> UC05 : <<extend>>\n[society member]
+UC16 .> UC15 : <<extend>>\n[resolved <= 7 days]
+
+' --- System: secondary actor performing automated steps ---
+UC02 --> Sys
+UC06 --> Sys
+UC14 --> Sys
+UC19 --> Sys
+UC22 --> Sys
+@enduml

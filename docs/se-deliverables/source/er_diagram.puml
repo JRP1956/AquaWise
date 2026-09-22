@@ -1,0 +1,117 @@
+@startuml AquaWise_ER
+' AquaWise — ER diagram for the MongoDB collections (Mongoose models)
+' PK = _id (ObjectId); FK = ObjectId reference; <<embedded>> = sub-document stored inside its parent
+hide circle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam dpi 180
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 12
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1F4E79
+  HeaderBackgroundColor #DCEBF7
+  ArrowColor #333333
+}
+skinparam nodesep 70
+skinparam ranksep 70
+
+entity "users" as User {
+  * _id : ObjectId <<PK>>
+  --
+  * name : String (2-60)
+  * email : String <<unique>>
+  * phone : String (10 digits)
+  * passwordHash : String (bcrypt)
+  * role : resident | society_admin | system_admin
+  society : ObjectId <<FK>> (nullable)
+  flatNo : String
+  wing : String
+  * isActive : Boolean
+  lastLoginAt : Date
+  createdAt / updatedAt : Date
+}
+
+entity "societies" as Society {
+  * _id : ObjectId <<PK>>
+  --
+  * name : String (3-80)
+  * joinCode : String(6) <<unique>>
+  * address : {line1, area, city, pincode}
+  * cityType : metro | city_sewered | town_unsewered
+  municipalHelpline : String
+  * admin : ObjectId <<FK>>
+  * memberCount : Number
+  contacts : Contact[] (max 20)
+  * isActive : Boolean
+  createdAt / updatedAt : Date
+}
+
+entity "Contact" as Contact <<embedded>> {
+  * role : String
+  * name : String
+  * phone : String
+  * categories : String[]
+}
+
+entity "complaints" as Complaint {
+  * _id : ObjectId <<PK>>
+  --
+  * complaintNo : String <<unique>> (AQW-YYYY-NNNN)
+  * society : ObjectId <<FK>>
+  * filedBy : ObjectId <<FK>>
+  * category : leakage | no_supply | unsafe_drinking_water
+     | low_pressure | contamination | other
+  * severity : low | medium | high | critical
+  advisoryRuleId : String (LK-1 ... CT-3)
+  * title : String (5-80)
+  * description : String (10-1000)
+  * location : own_flat | common_area | overhead_tank
+     | underground_tank | road_main
+  * assignedContact : {role, name, phone} (snapshot)
+  * status : active | in_progress | resolved
+  statusHistory : StatusChange[]
+  resolvedAt : Date
+  createdAt / updatedAt : Date
+}
+
+entity "StatusChange" as StatusChange <<embedded>> {
+  from : String | null
+  * to : String
+  * by : ObjectId <<FK>>
+  {field} note : String (0-300)
+  * at : Date
+}
+
+entity "calculatorlogs" as CalcLog {
+  * _id : ObjectId <<PK>>
+  --
+  * user : ObjectId <<FK>>
+  * inputs : {adults, children, cityType, bathingMode,
+     showers, showerMinutes, showerType, bucketBaths,
+     toiletType, machineLoadsPerWeek, machineType,
+     gardenAreaM2, tapMinutes, tapType, drippingTaps,
+     suppliedLitresPerDay}
+  * results : {byActivity, totalLitresPerDay,
+     perCapitaLpcd, normLpcd, band, flags[]}
+  * formulaVersion : String
+  createdAt / updatedAt : Date
+}
+
+entity "sessions" as Session {
+  * _id : String <<PK>> (session id)
+  --
+  * expires : Date <<TTL index>>
+  * session : {cookie, userId, role}
+}
+
+User "0..*" }o--o| "0..1" Society : member of >
+Society "1" ||--|| "1" User : administered by >
+Society ||--o{ Complaint : has >
+User ||--o{ Complaint : files >
+User ||--o{ CalcLog : saves >
+User ||--o{ Session : logs in via >
+Society *-- "0..20" Contact : embeds
+Complaint *-- "1..*" StatusChange : embeds
+StatusChange }o--|| User : changed by >
+@enduml

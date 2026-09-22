@@ -1,0 +1,378 @@
+{
+  "info": {
+    "name": "AquaWise API",
+    "description": "Every AquaWise endpoint, with the failure cases as well as the happy path. Run the folders in order: Auth → Societies → Complaints → Tools. The collection stores the join code and complaint id in collection variables, so later requests pick them up automatically.\n\nSet {{baseUrl}} to http://localhost:4000 for local testing, or your deployed API URL. Postman keeps the session cookie between requests on its own — do not add an Authorization header.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "joinCode", "value": "AQUA26" },
+    { "key": "complaintId", "value": "" },
+    { "key": "adminEmail", "value": "asha@aquawise.test" },
+    { "key": "residentEmail", "value": "vikram@aquawise.test" },
+    { "key": "password", "value": "water1234" }
+  ],
+  "item": [
+    {
+      "name": "0. Health",
+      "item": [
+        {
+          "name": "GET /api/health",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-00 API is up', () => pm.response.to.have.status(200));",
+            "pm.test('reports ok', () => pm.expect(pm.response.json().ok).to.eql(true));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/health" }
+        }
+      ]
+    },
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "POST /auth/signup — valid",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-01 creates the account', () => pm.response.to.have.status(201));",
+            "pm.test('never returns a password hash', () => pm.expect(pm.response.json().user.passwordHash).to.be.undefined);",
+            "pm.test('new users are plain residents', () => pm.expect(pm.response.json().user.role).to.eql('resident'));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test.user+{{$randomInt}}@example.com\",\n  \"phone\": \"9876512345\",\n  \"password\": \"water1234\"\n}" },
+            "url": "{{baseUrl}}/api/auth/signup"
+          }
+        },
+        {
+          "name": "POST /auth/signup — weak password (expect 400)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-02 rejects a weak password', () => pm.response.to.have.status(400));",
+            "pm.test('names the offending field', () => pm.expect(pm.response.json().error.fields).to.have.property('password'));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Weak Password\",\n  \"email\": \"weak@example.com\",\n  \"phone\": \"9876512345\",\n  \"password\": \"abc\"\n}" },
+            "url": "{{baseUrl}}/api/auth/signup"
+          }
+        },
+        {
+          "name": "POST /auth/signup — duplicate email (expect 409)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-03 rejects a duplicate email', () => pm.response.to.have.status(409));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Asha Menon\",\n  \"email\": \"{{adminEmail}}\",\n  \"phone\": \"9876543210\",\n  \"password\": \"water1234\"\n}" },
+            "url": "{{baseUrl}}/api/auth/signup"
+          }
+        },
+        {
+          "name": "POST /auth/login — wrong password (expect 401)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-04 rejects a wrong password', () => pm.response.to.have.status(401));",
+            "pm.test('does not reveal which field was wrong', () => pm.expect(pm.response.json().error.message).to.include('Email or password'));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"definitelywrong1\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "GET /auth/me — no session (expect 401)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-05 protected route needs a session', () => pm.response.to.have.status(401));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/me" }
+        },
+        {
+          "name": "POST /auth/login — admin",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-06 logs the admin in', () => pm.response.to.have.status(200));",
+            "pm.test('session cookie is set', () => pm.expect(pm.cookies.has('aquawise.sid')).to.be.true);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{password}}\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "GET /auth/me — logged in",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-07 returns the session user', () => pm.response.to.have.status(200));",
+            "pm.test('carries the society', () => pm.expect(pm.response.json().society).to.not.be.null);"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/me" }
+        }
+      ]
+    },
+    {
+      "name": "2. Societies",
+      "item": [
+        {
+          "name": "GET /societies/mine",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-08 returns the society', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('joinCode', pm.response.json().society.joinCode);"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/societies/mine" }
+        },
+        {
+          "name": "GET /societies/mine/members",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-09 lists members', () => pm.response.to.have.status(200));",
+            "pm.test('no password hashes leak', () => pm.expect(JSON.stringify(pm.response.json())).to.not.include('passwordHash'));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/societies/mine/members" }
+        },
+        {
+          "name": "POST /societies/mine/contacts — admin only",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-10 admin can add a contact', () => pm.response.to.have.status(201));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"Night security\",\n  \"name\": \"R. Yadav\",\n  \"phone\": \"9800011122\",\n  \"categories\": [\"no_supply\"]\n}" },
+            "url": "{{baseUrl}}/api/societies/mine/contacts"
+          }
+        },
+        {
+          "name": "POST /societies/join — bad code (expect 404)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-11 rejects an unknown join code', () => pm.response.to.have.status(404));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"joinCode\": \"ZZZZZZ\",\n  \"flatNo\": \"101\"\n}" },
+            "url": "{{baseUrl}}/api/societies/join"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Complaints",
+      "item": [
+        {
+          "name": "POST /complaints — file one",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-12 files the complaint', () => pm.response.to.have.status(201));",
+            "const c = pm.response.json().complaint;",
+            "pm.test('gets a readable number', () => pm.expect(c.complaintNo).to.match(/^AQW-\\d{4}-\\d{4}$/));",
+            "pm.test('starts active', () => pm.expect(c.status).to.eql('active'));",
+            "pm.test('is routed to a contact', () => pm.expect(c.assignedContact.name).to.be.a('string'));",
+            "pm.collectionVariables.set('complaintId', c._id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"category\": \"leakage\",\n  \"severity\": \"medium\",\n  \"title\": \"Leaking joint in the B wing riser\",\n  \"description\": \"Water is dripping from the riser joint on the third floor landing and pooling on the stairs.\",\n  \"location\": \"common_area\",\n  \"advisoryRuleId\": \"LK-2\"\n}" },
+            "url": "{{baseUrl}}/api/complaints"
+          }
+        },
+        {
+          "name": "POST /complaints — too short (expect 400)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-13 rejects a too-short complaint', () => pm.response.to.have.status(400));",
+            "pm.test('names both fields', () => {",
+            "  const f = pm.response.json().error.fields;",
+            "  pm.expect(f).to.have.property('title');",
+            "  pm.expect(f).to.have.property('description');",
+            "});"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"category\": \"leakage\",\n  \"severity\": \"low\",\n  \"title\": \"Drip\",\n  \"description\": \"tap\",\n  \"location\": \"own_flat\"\n}" },
+            "url": "{{baseUrl}}/api/complaints"
+          }
+        },
+        {
+          "name": "GET /complaints — list with counts",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-14 lists complaints', () => pm.response.to.have.status(200));",
+            "pm.test('includes the dashboard summary', () => pm.expect(pm.response.json().summary).to.have.all.keys('active', 'in_progress', 'resolved'));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/complaints" }
+        },
+        {
+          "name": "GET /complaints?status=active&category=leakage",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-15 filters work', () => pm.response.to.have.status(200));",
+            "pm.test('every row matches the filter', () => pm.response.json().complaints.forEach(c => {",
+            "  pm.expect(c.status).to.eql('active');",
+            "  pm.expect(c.category).to.eql('leakage');",
+            "}));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/complaints?status=active&category=leakage" }
+        },
+        {
+          "name": "PATCH /complaints/:id/status — no note (expect 400)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-16 a status change needs a note', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"to\": \"in_progress\"\n}" },
+            "url": "{{baseUrl}}/api/complaints/{{complaintId}}/status"
+          }
+        },
+        {
+          "name": "PATCH /complaints/:id/status — in progress",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-17 admin advances the status', () => pm.response.to.have.status(200));",
+            "const c = pm.response.json().complaint;",
+            "pm.test('status moved', () => pm.expect(c.status).to.eql('in_progress'));",
+            "pm.test('history records the move', () => pm.expect(c.statusHistory[c.statusHistory.length - 1].from).to.eql('active'));"
+          ] } }],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"to\": \"in_progress\",\n  \"note\": \"Plumber booked for Thursday morning.\"\n}" },
+            "url": "{{baseUrl}}/api/complaints/{{complaintId}}/status"
+          }
+        },
+        {
+          "name": "PATCH /complaints/:id/status — illegal move (expect 400)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-18 the state machine blocks in_progress → in_progress', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"to\": \"in_progress\",\n  \"note\": \"again\"\n}" },
+            "url": "{{baseUrl}}/api/complaints/{{complaintId}}/status"
+          }
+        },
+        {
+          "name": "GET /complaints/:id",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-19 opens one complaint', () => pm.response.to.have.status(200));",
+            "pm.test('carries its full history', () => pm.expect(pm.response.json().complaint.statusHistory.length).to.be.above(1));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/complaints/{{complaintId}}" }
+        }
+      ]
+    },
+    {
+      "name": "4. Calculator & Advisory",
+      "item": [
+        {
+          "name": "POST /calculator — worked example",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-20 calculates', () => pm.response.to.have.status(200));",
+            "const r = pm.response.json().results;",
+            "pm.test('matches the requirements doc §7.4', () => {",
+            "  pm.expect(r.totalLitresPerDay).to.eql(678.18);",
+            "  pm.expect(r.perCapitaLpcd).to.eql(169.55);",
+            "  pm.expect(r.band).to.eql('overuse');",
+            "});"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"inputs\": {\n    \"adults\": 2,\n    \"children\": 2,\n    \"cityType\": \"metro\",\n    \"bathingMode\": \"shower\",\n    \"showersPerPersonPerDay\": 1,\n    \"showerMinutes\": 7.8,\n    \"showerType\": \"standard\",\n    \"toiletType\": \"standard\",\n    \"machineLoadsPerWeek\": 5,\n    \"machineType\": \"standard\",\n    \"gardenAreaM2\": 0,\n    \"tapMinutesPerPersonPerDay\": 2,\n    \"tapType\": \"standard\",\n    \"drippingTaps\": 1\n  }\n}" },
+            "url": "{{baseUrl}}/api/calculator"
+          }
+        },
+        {
+          "name": "POST /calculator — client-sent results are ignored",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-21 the server recomputes', () => pm.response.to.have.status(200));",
+            "pm.test('the forged total is discarded', () => pm.expect(pm.response.json().results.totalLitresPerDay).to.not.eql(1));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"inputs\": {\n    \"adults\": 2,\n    \"children\": 0,\n    \"cityType\": \"metro\",\n    \"bathingMode\": \"shower\",\n    \"toiletType\": \"standard\",\n    \"machineLoadsPerWeek\": 3,\n    \"machineType\": \"standard\",\n    \"gardenAreaM2\": 0,\n    \"tapMinutesPerPersonPerDay\": 2,\n    \"tapType\": \"standard\",\n    \"drippingTaps\": 0\n  },\n  \"results\": { \"totalLitresPerDay\": 1 }\n}" },
+            "url": "{{baseUrl}}/api/calculator"
+          }
+        },
+        {
+          "name": "POST /calculator — out of range (expect 400)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-22 rejects out-of-range input', () => pm.response.to.have.status(400));",
+            "pm.test('names the field', () => pm.expect(pm.response.json().error.fields).to.have.property('adults'));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"inputs\": {\n    \"adults\": 0,\n    \"children\": 0,\n    \"cityType\": \"metro\",\n    \"bathingMode\": \"shower\",\n    \"toiletType\": \"standard\",\n    \"machineLoadsPerWeek\": 0,\n    \"gardenAreaM2\": 0,\n    \"tapMinutesPerPersonPerDay\": 2,\n    \"tapType\": \"standard\",\n    \"drippingTaps\": 0\n  }\n}" },
+            "url": "{{baseUrl}}/api/calculator"
+          }
+        },
+        {
+          "name": "GET /calculator/history",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-23 returns saved runs', () => pm.response.to.have.status(200));",
+            "pm.test('at most 10', () => pm.expect(pm.response.json().logs.length).to.be.at.most(10));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/calculator/history" }
+        },
+        {
+          "name": "GET /advisory/rules",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-24 serves the catalogue', () => pm.response.to.have.status(200));",
+            "pm.test('five problem types', () => pm.expect(pm.response.json().problems.length).to.eql(5));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/advisory/rules" }
+        },
+        {
+          "name": "POST /advisory/evaluate — critical leak",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-25 resolves the rule', () => pm.response.to.have.status(200));",
+            "const r = pm.response.json().rule;",
+            "pm.test('picks LK-3', () => pm.expect(r.id).to.eql('LK-3'));",
+            "pm.test('raises the emergency banner', () => pm.expect(r.emergency).to.be.true);",
+            "pm.test('steps are ordered and non-empty', () => pm.expect(r.steps.length).to.be.above(3));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"problemType\": \"leakage\",\n  \"answers\": { \"leakKind\": \"burst_pipe\", \"hazard\": \"yes\" }\n}" },
+            "url": "{{baseUrl}}/api/advisory/evaluate"
+          }
+        },
+        {
+          "name": "POST /advisory/evaluate — unanswered question (expect 400)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-26 rejects incomplete answers', () => pm.response.to.have.status(400));",
+            "pm.test('names the unanswered question', () => pm.expect(pm.response.json().error.fields).to.have.property('hazard'));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"problemType\": \"leakage\",\n  \"answers\": { \"leakKind\": \"pipe_joint\" }\n}" },
+            "url": "{{baseUrl}}/api/advisory/evaluate"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Logout",
+      "item": [
+        {
+          "name": "POST /auth/logout",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-27 logs out', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/logout" }
+        },
+        {
+          "name": "GET /complaints — after logout (expect 401)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('TC-PM-28 the session is really gone', () => pm.response.to.have.status(401));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/complaints" }
+        }
+      ]
+    }
+  ]
+}
